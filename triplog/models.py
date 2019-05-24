@@ -51,7 +51,7 @@ class Trip(models.Model):
         ('1', 'Published')
     )
     trip_name = models.CharField(blank=False, max_length=255)
-    trip_category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    trip_category = models.ForeignKey(Category, on_delete=models.CASCADE, blank=True)
     trip_body = models.TextField(blank=False)
     trip_user = models.ForeignKey(User, on_delete=models.CASCADE)
     trip_location = models.ManyToManyField(Location, blank=True)
