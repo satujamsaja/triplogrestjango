@@ -17,10 +17,11 @@ class LocationSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'location_name', 'location_body', 'location_status')
 
 
-class TripSerializer(serializers.HyperlinkedModelSerializer):
+class TripSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trip
         fields = ('id', 'trip_name', 'trip_body', 'trip_location', 'trip_status')
+        depth = 1
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
