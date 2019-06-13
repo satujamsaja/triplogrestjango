@@ -14,13 +14,13 @@ class CategorySerializer(serializers.HyperlinkedModelSerializer):
 class LocationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Location
-        fields = ('id', 'location_name', 'location_body', 'location_status')
+        fields = ('id', 'location_name', 'location_body', 'location_status', 'location_date')
 
 
 class TripSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trip
-        fields = ('id', 'trip_name', 'trip_body', 'trip_location', 'trip_status')
+        fields = ('id', 'trip_name',  'trip_category', 'trip_body', 'trip_location', 'trip_status', 'trip_date')
         depth = 1
 
 

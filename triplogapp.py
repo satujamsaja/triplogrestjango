@@ -1,7 +1,11 @@
+"""
+Triplog Desktop App with TkInter
+"""
 import tkinter as tk
 from tkinter.messagebox import showinfo
 from tkinter import ttk
 from tkinter import messagebox
+import dateutil.parser
 import requests
 
 
@@ -13,7 +17,8 @@ class TripLogApp(tk.Tk):
         """
         Window size and style.
         """
-        self.geometry("300x500")
+        self.geometry("800x500")
+        self.wm_title("Triplog App")
         style = ttk.Style(self)
         style.theme_use('aqua')
 
@@ -31,7 +36,10 @@ class TripLogApp(tk.Tk):
         Trip tree view
         """
         self.trip_view = ttk.Treeview(frame_mid)
+        self.trip_view["columns"] = ("Type", "Date")
         self.trip_view.heading('#0', text="Trips")
+        self.trip_view.heading('#1', text="Type")
+        self.trip_view.heading('#2', text="Date")
         self.trip_view.pack(fill=tk.BOTH, expand=tk.YES)
 
         """
@@ -61,7 +69,9 @@ class TripLogApp(tk.Tk):
         """
         self.connect_window = None
         self.add_trip_window = None
+        self.trip_window = None
         self.disconnect = True
+        self.trip_window_open = False
 
         """
         Api Data and token.
@@ -102,7 +112,6 @@ class TripLogApp(tk.Tk):
         if self.disconnect is False:
             self.add_trip_window = tk.Toplevel()
 
-
     """
     Connect to server.
     """
@@ -122,11 +131,13 @@ class TripLogApp(tk.Tk):
             self.connect_window.destroy()
             self.refresh_button.config(state="enabled")
             self.add_trip_button.config(state="enabled")
-            self.token = token["token"]
+            self.token = token.get("token")
             trips = self.get_trip_list()
             self.categories = self.get_categories()
             if trips is not None:
                 self.display_trips(trips)
+                # Bind tree view click.
+                self.trip_view.bind("<Double-1>", self.open_trip_detail)
         else:
             showinfo('Error', "Unable to login.")
 
@@ -168,21 +179,63 @@ class TripLogApp(tk.Tk):
             return None
 
     """
+    Get trip detail
+    """
+    def get_trip_detail(self, id):
+        api_url = self.api_root + "trips/" + id
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + self.token
+        }
+
+        connect = requests.get(api_url, headers=headers)
+        if connect.status_code == 200:
+            data = connect.json()
+            return data
+        else:
+            showinfo('Error', "Unable to get request.")
+            return None
+
+    """
+    Get location detail
+    """
+
+    def get_location_detail(self, id):
+        api_url = self.api_root + "locations/" + id
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + self.token
+        }
+
+        connect = requests.get(api_url, headers=headers)
+        if connect.status_code == 200:
+            data = connect.json()
+            return data
+        else:
+            showinfo('Error', "Unable to get request.")
+            return None
+
+    """
     Render result in TreeView.
     """
     def display_trips(self, data):
         for trip in data:
-            self.trip_view.insert('', tk.END, "{}-{}".format("trip", trip['id']), text=trip['trip_name'])
+            trip_date_parse = dateutil.parser.parse(trip.get('trip_date'))
+            trip_date = trip_date_parse.strftime("%Y-%m-%d %H:%I %p")
+            self.trip_view.insert('', tk.END, "{}-{}".format("trip", trip.get('id')), text=trip.get('trip_name'), values=("Trip", trip_date))
             if trip['trip_location'] is not None:
                 for location in trip['trip_location']:
-                    self.trip_view.insert("{}-{}".format("trip", trip['id']), tk.END,
-                                          "{}-{}-{}-{}".format("trip", trip['id'], "loc", location['id']), text=location['location_name'])
+                    location_date_parse = dateutil.parser.parse(location.get('location_date'))
+                    location_date = location_date_parse.strftime("%Y-%m-%d %H:%I %p")
+                    self.trip_view.insert("{}-{}".format("trip", trip.get('id')), tk.END,
+                                          "{}-{}-{}-{}".format("loc", location.get('id'), "trip", trip.get('id')),
+                                          text=location.get('location_name'), values=("Location",
+                                                                                      location_date))
 
     """
     Reload trips display.
     """
     def reload_trips(self):
-
         # Clean all items
         children = self.trip_view.get_children()
         for child in children:
@@ -191,10 +244,87 @@ class TripLogApp(tk.Tk):
         # Recreate all items.
         if self.token is not None:
             trips = self.get_trip_list()
-            print(trips)
             self.display_trips(trips)
         else:
             showinfo('Error', "Unable to get token.")
+
+    """
+    Open trip detail on tree click.
+    """
+    def open_trip_detail(self, event):
+        item = self.trip_view.identify('item', event.x, event.y)
+        root_x = self.winfo_x()
+        root_y = self.winfo_y()
+        if item:
+            if self.trip_window_open:
+                self.trip_window.destroy()
+                self.trip_window_open = False
+            self.trip_window = tk.Toplevel()
+            self.trip_window.geometry("%dx%d+%d+%d" % (400, 400, root_x + 50, root_y + 50))
+            sel_item = item.split("-")
+            # If trip selected.
+            if sel_item[0] == "trip":
+                trip = self.get_trip_detail(sel_item[1])
+                if trip is not None:
+                    self.trip_window.wm_title("Trip: " + self.trip_view.item(item, "text"))
+                    self.trip_window_open = True
+                    # Get locations.
+                    location = []
+                    for trip_loc in trip.get('trip_location'):
+                        location.append(trip_loc.get('location_name'))
+                    # Trip name.
+                    trip_name_label = ttk.Label(self.trip_window, text="Trip Name")
+                    trip_name_label.grid(row=0, column=0, sticky="W")
+                    trip_name = ttk.Label(self.trip_window, text=": " + trip.get('trip_name'))
+                    trip_name.grid(row=0, column=1, sticky="W")
+                    # Trip category.
+                    trip_category_label = ttk.Label(self.trip_window, text="Category")
+                    trip_category_label.grid(row=1, column=0, sticky="W")
+                    trip_category = ttk.Label(self.trip_window, text=": " +
+                                                                     trip.get('trip_category').get("category_name"))
+                    trip_category.grid(row=1, column=1, sticky="W")
+                    # Trip body.
+                    trip_body_label = ttk.Label(self.trip_window, text="Description")
+                    trip_body_label.grid(row=2, column=0, sticky="W")
+                    trip_body = ttk.Label(self.trip_window, text=": " + trip.get('trip_body'))
+                    trip_body.grid(row=2, column=1, sticky="W")
+                    # Trip location.
+                    if location:
+                        trip_locations_label = ttk.Label(self.trip_window, text="Locations")
+                        trip_locations_label.grid(row=3, column=0, sticky="NW")
+                        trip_locations = ttk.Label(self.trip_window, text=": " + "\n".join(location))
+                        trip_locations.grid(row=3, column=1, sticky="W")
+                    # Trip Date
+                    trip_data_parse = dateutil.parser.parse(trip.get('trip_date'))
+                    trip_date_text = trip_data_parse.strftime("%Y-%m-%d %H:%I %p")
+                    trip_date_label = ttk.Label(self.trip_window, text="Date")
+                    trip_date_label.grid(row=4, column=0, sticky="W")
+                    trip_date = ttk.Label(self.trip_window, text=": " + trip_date_text)
+                    trip_date.grid(row=4, column=1, sticky="W")
+
+            # If location selected.
+            if sel_item[0] == "loc":
+                location = self.get_location_detail(sel_item[1])
+                if location:
+                    self.trip_window.wm_title("Location: " + self.trip_view.item(item, "text"))
+                    self.trip_window_open = True
+                    # Location name,
+                    location_name_label = ttk.Label(self.trip_window, text="Location name")
+                    location_name_label.grid(row=0, column=0, sticky="W")
+                    location_name = ttk.Label(self.trip_window, text=": " + location.get('location_name'))
+                    location_name.grid(row=0, column=1, sticky="W")
+                    # Location body.
+                    location_body_label = ttk.Label(self.trip_window, text="Description")
+                    location_body_label.grid(row=1, column=0, sticky="W")
+                    location_body = ttk.Label(self.trip_window, text=": " + location.get('location_body'))
+                    location_body.grid(row=1, column=1, sticky="W")
+                    # Location date.
+                    location_data_parse = dateutil.parser.parse(location.get('location_date'))
+                    location_date_text = location_data_parse.strftime("%Y-%m-%d %H:%I %p")
+                    location_date_label = ttk.Label(self.trip_window, text="Date")
+                    location_date_label.grid(row=2, column=0, sticky="W")
+                    location_date = ttk.Label(self.trip_window, text=": " + location_date_text)
+                    location_date.grid(row=2, column=1, sticky="W")
 
     """
     Quit app.
@@ -206,5 +336,5 @@ class TripLogApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    triplog_app = TripLogApp()
-    triplog_app.mainloop()
+    trip_log_app = TripLogApp()
+    trip_log_app.mainloop()
