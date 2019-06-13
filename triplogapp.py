@@ -111,6 +111,40 @@ class TripLogApp(tk.Tk):
     def add_trip_window(self):
         if self.disconnect is False:
             self.add_trip_window = tk.Toplevel()
+            self.add_trip_window.wm_title("Add trip")
+            trip_name_label = ttk.Label(self.add_trip_window, text="Trip name: ")
+            trip_name_label.grid(row=0, column=0, sticky="W")
+            trip_name_field = ttk.Entry(self.add_trip_window)
+            trip_name_field.grid(row=0, column=1, sticky="W")
+
+            # Fetch categories.
+            if self.categories is None:
+                self.categories = self.get_categories()
+
+            if self.categories:
+                tk_var = tk.StringVar()
+                categories = ['Select category']
+                for category in self.categories:
+                    categories.append(category.get('category_name'))
+
+                # Trip category.
+                trip_category_label = ttk.Label(self.add_trip_window, text="Category: ")
+                trip_category_label.grid(row=1, column=0, sticky="W")
+                trip_category_option = ttk.OptionMenu(self.add_trip_window, tk_var,  *categories)
+                trip_category_option.grid(row=1, column=1, sticky="W")
+                # Trip body.
+                trip_body_label = ttk.Label(self.add_trip_window, text="Description")
+                trip_body_label.grid(row=2, column=0, sticky="NW")
+                trip_body = tk.Text(self.add_trip_window, height=10, width=25)
+                trip_body.grid(row=2, column=1, sticky="W")
+                # Save button.
+                trip_save_button = ttk.Button(self.add_trip_window, text="Save",
+                    command=lambda trip_name_data=trip_name_field,
+                    trip_category_data=tk_var,
+                    trip_body_data=trip_body:
+                    self.save_trip(trip_name_data, trip_category_data, trip_body_data))
+
+                trip_save_button.grid(row=3, column=1, sticky="W")
 
     """
     Connect to server.
@@ -119,7 +153,6 @@ class TripLogApp(tk.Tk):
         data = {
             'username': username.get(),
             'password': password.get(),
-
         }
 
         connect = requests.post(self.api_auth, data=data)
@@ -185,7 +218,7 @@ class TripLogApp(tk.Tk):
         api_url = self.api_root + "trips/" + id
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': 'Token ' + self.token
+            'Authorization': 'Token ' + self.token,
         }
 
         connect = requests.get(api_url, headers=headers)
@@ -214,6 +247,28 @@ class TripLogApp(tk.Tk):
         else:
             showinfo('Error', "Unable to get request.")
             return None
+
+    """
+    Save trip
+    """
+    def save_trip(self, trip_name_data, trip_category_data, trip_body_data):
+        api_url = self.api_root + "trips/"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + self.token,
+        }
+
+        data = {
+            'trip_name': trip_name_data.get(),
+            'trip_category': trip_category_data.get(),
+            'trip_body': trip_body_data.get("1.0", tk.END),
+        }
+
+        try:
+            connect = requests.post(api_url, headers, data)
+            print(connect.status_code)
+        except requests.exceptions.HTTPError as e:
+            print(e)
 
     """
     Render result in TreeView.
