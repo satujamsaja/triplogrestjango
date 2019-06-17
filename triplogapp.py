@@ -70,6 +70,7 @@ class TripLogApp(tk.Tk):
         """
         self.connect_window = None
         self.add_trip_window = None
+        self.edit_trip_window = None
         self.add_location_window = None
         self.trip_window = None
         self.disconnect = True
@@ -164,7 +165,7 @@ class TripLogApp(tk.Tk):
             location_name_field = tk.Entry(self.add_location_window)
             location_name_field.grid(row=0, column=1, sticky="W")
             # Location description
-            location_body_label = ttk.Label(self.add_location_window, text="Descriptipn")
+            location_body_label = ttk.Label(self.add_location_window, text="Description")
             location_body_label.grid(row=1, column=0, sticky="NW")
             location_body_field = tk.Text(self.add_location_window, height=10, width=25)
             location_body_field.grid(row=1, column=1, sticky="W")
@@ -176,6 +177,35 @@ class TripLogApp(tk.Tk):
                                               self.save_location(location_name_data, location_body_data, trip_id_data))
             location_save_button.grid(row=2, column=1, sticky="W")
 
+    """
+    Edit trip window.
+    """
+    def edit_trip_popup(self, trip_id):
+        if self.disconnect is False:
+            self.edit_trip_window = tk.Toplevel()
+            self.edit_trip_window.wm_title("Edit trip id:" + "{}".format(trip_id))
+            self.trip_window.destroy()
+            # Get trip data.
+            trip = self.get_trip_detail(trip_id)
+            if trip:
+                # Trip name field.
+                trip_name_label = tk.Label(self.edit_trip_window, text="Location name")
+                trip_name_label.grid(row=0, column=0, sticky="W")
+                trip_name_field = tk.Entry(self.edit_trip_window)
+                trip_name_field.grid(row=0, column=1, sticky="W")
+                trip_name_field.insert(0, trip.get('trip_name'))
+                trip_name_field.focus_set()
+                # Trip body field.
+                trip_body_label = tk.Label(self.edit_trip_window, text="Description")
+                trip_body_label.grid(row=1, column=0, sticky="NW")
+                trip_body_field = tk.Text(self.edit_trip_window, height=10, width=25)
+                trip_body_field.grid(row=1, column=1, sticky="W")
+                #trip_body_field.insert(tk.END, trip.get('trip_description'))
+                # Update button.
+                trip_update_button = ttk.Button(self.edit_trip_window, text="Update",
+                                               command=lambda trip_name_data=trip_name_field, trip_body_data=trip_body_field, trip_id_data=trip.get('id'):
+                                               self.update_trip(trip_name_data, trip_body_data, trip_id_data))
+                trip_update_button.grid(row=2, column=1, sticky="W")
 
     """
     Connect to server.
@@ -360,6 +390,12 @@ class TripLogApp(tk.Tk):
             showinfo("Require fields", "Please fill required fields.")
 
     """
+    Update trip.
+    """
+    def update_trip(self, trip_name_data, trip_body_data, trip_id_data):
+        pass
+
+    """
     Save location.
     """
     def save_location(self, location_name_data, location_body_data, trip_id_data):
@@ -484,7 +520,7 @@ class TripLogApp(tk.Tk):
                                                     command=lambda trip_id=trip.get('id'): self.trip_delete(trip_id))
                     trip_delete_button.grid(row=5, column=1, sticky="W")
                     trip_edit_button = ttk.Button(self.trip_window, text="Edit trip",
-                                                  command=lambda trip_id=trip.get('id'): self.trip_delete(trip_id))
+                                                  command=lambda trip_id=trip.get('id'): self.edit_trip_popup(trip_id))
                     trip_edit_button.grid(row=6, column=1, sticky="W")
                     location_add_button = ttk.Button(self.trip_window, text="Add location",
                                                      command=lambda trip_id=trip.get('id'):
