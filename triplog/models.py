@@ -53,10 +53,10 @@ class Trip(models.Model):
         ('1', 'Published')
     )
     trip_name = models.CharField(blank=False, max_length=255)
-    trip_category = models.ForeignKey(Category, on_delete=models.CASCADE, blank=True)
+    trip_category = models.ForeignKey(Category, on_delete=models.CASCADE, blank=True, related_name='category')
     trip_body = models.TextField(blank=False)
-    trip_user = models.ForeignKey(User, on_delete=models.CASCADE)
-    trip_location = models.ManyToManyField(Location, blank=True)
+    trip_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user')
+    trip_location = models.ManyToManyField(Location, blank=True, related_name='location')
     trip_status = models.CharField(max_length=1, choices=TRIP_STATUS_CHOICES, blank=False, default='1')
     trip_date = models.DateTimeField('trip date', default=datetime.now, blank=True)
 
