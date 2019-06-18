@@ -495,8 +495,6 @@ class TripLogApp(tk.Tk):
                     response = connect.json()
                     if response:
                         trip = self.get_trip_detail(trip_id_data)
-                        print(response)
-                        print(trip)
                         if trip:
                             trip_location = trip.get('trip_location')
                             # Add new trip to trip location.

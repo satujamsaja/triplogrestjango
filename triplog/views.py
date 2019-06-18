@@ -36,8 +36,20 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email')
 
+
+class TripAllSerializer(serializers.ModelSerializer):
+    trip_category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    trip_user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Trip
+        fields = ('id', 'trip_name',  'trip_category', 'trip_body', 'trip_user', 'trip_location', 'trip_status',
+                  'trip_date')
+        depth = 1
+
+
 """
-Viewsets.
+View Sets.
 """
 
 
@@ -52,8 +64,13 @@ class LocationViewSet(viewsets.ModelViewSet):
 
 
 class TripViewSet(viewsets.ModelViewSet):
-    queryset = Trip.objects.filter(trip_status__exact='1')
+    queryset = Trip.objects.filter(trip_status__exact='1').order_by('-trip_date')
     serializer_class = TripSerializer
+
+
+class TripAllViewSet(viewsets.ModelViewSet):
+    queryset = Trip.objects.filter(trip_status__exact='1').order_by('-trip_date')
+    serializer_class = TripAllSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):

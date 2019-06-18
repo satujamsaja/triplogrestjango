@@ -8,6 +8,7 @@ router.register(r'locations', LocationViewSet)
 router.register(r'trips', TripViewSet)
 router.register(r'categories', CategoryViewSet)
 router.register(r'users', UserViewSet)
+router.register(r'all', TripAllViewSet)
 
 urlpatterns = [
     url(r'^api/', include(router.urls)),
