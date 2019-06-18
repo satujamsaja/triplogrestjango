@@ -1,0 +1,41 @@
+section {
+    text-align:center;
+}
+
+section div {
+    width:300px;
+    margin:0 auto;
+    padding:10px;
+    border-radius: 5px;
+}
+
+section div > div:nth-child(odd) {
+    background-color:#ccc;
+}
+
+section div > div:nth-child(even) {
+    background-color:#eee;
+}
+
+section div > div > div {
+    width:280px;
+    padding: 5px;
+}
+
+section div > div > div p {
+    padding: 5px;
+    margin: 0px;
+}
+
+section div > div > div p:nth-child(odd) {
+    background-color:#ddd;
+}
+
+section div > div > div p:nth-child(even) {
+    background-color:#fff;
+}
+
+section div > div > div p span,
+section div > div p span{
+    font-size:9px;
+}
