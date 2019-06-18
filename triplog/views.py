@@ -9,7 +9,6 @@ from rest_framework.response import Response
 Serializers.
 """
 
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -30,14 +29,12 @@ class TripSerializer(serializers.ModelSerializer):
         model = Trip
         fields = ('id', 'trip_name',  'trip_category', 'trip_body', 'trip_user', 'trip_location', 'trip_status',
                   'trip_date')
-        depth = 1
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email')
-
 
 """
 Viewsets.

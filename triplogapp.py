@@ -41,6 +41,9 @@ class TripLogApp(tk.Tk):
         self.trip_view.heading('#0', text="Trips")
         self.trip_view.heading('#1', text="Type")
         self.trip_view.heading('#2', text="Date")
+        self.trip_view.column('#0', minwidth=0)
+        self.trip_view.column('#1', width=100, stretch=tk.NO, anchor=tk.CENTER)
+        self.trip_view.column('#2', width=150, stretch=tk.NO, anchor=tk.CENTER)
         self.trip_view.pack(fill=tk.BOTH, expand=tk.YES)
 
         """
@@ -56,6 +59,14 @@ class TripLogApp(tk.Tk):
         """
         Connect button.
         """
+        self.username_label = tk.Label(frame_top, text="Username")
+        self.username_label.pack(side=tk.LEFT)
+        self.username_field = tk.Entry(frame_top)
+        self.username_field.pack(side=tk.LEFT)
+        self.password_label = tk.Label(frame_top, text="Password")
+        self.password_label.pack(side=tk.LEFT)
+        self.password_field = tk.Entry(frame_top, show="*")
+        self.password_field.pack(side=tk.LEFT)
         self.connect_button = ttk.Button(frame_top, text="Connect", command=self.connect_window)
         self.connect_button.pack()
 
@@ -93,21 +104,7 @@ class TripLogApp(tk.Tk):
 
     def connect_window(self):
         if self.disconnect:
-            self.connect_window = tk.Toplevel()
-            self.connect_window.wm_title("Connect to server")
-            username_label = tk.Label(self.connect_window, text="Username")
-            password_label = tk.Label(self.connect_window, text="Password")
-            username_label.grid(row=0)
-            password_label.grid(row=1)
-            username_field = tk.Entry(self.connect_window)
-            password_field = tk.Entry(self.connect_window, show="*")
-            username_field.grid(row=0, column=1, columnspan=2)
-            password_field.grid(row=1, column=1, columnspan=2)
-            connect_button = ttk.Button(self.connect_window, text="Connect", command=lambda
-                username=username_field, password=password_field: self.connect_server(username, password))
-            connect_button.grid(row=2, column=1)
-            connect_close_button = ttk.Button(self.connect_window, text="Close", command=self.connect_window.destroy)
-            connect_close_button.grid(row=2, column=2)
+            self.connect_server(self.username_field, self.password_field)
         else:
             self.quit_app()
 
@@ -241,7 +238,6 @@ class TripLogApp(tk.Tk):
             self.trip_window.destroy()
             # Get location data.
             location = self.get_location_detail(location_id)
-            print(location)
             if location:
                 # Location name.
                 location_name_label = ttk.Label(self.edit_location_window, text="Location name")
@@ -266,7 +262,6 @@ class TripLogApp(tk.Tk):
     """
     Connect to server.
     """
-
     def connect_server(self, username, password):
         data = {
             'username': username.get(),
@@ -281,9 +276,10 @@ class TripLogApp(tk.Tk):
                     self.connect_button['text'] = "Quit"
                     self.disconnect = False
                     self.status_bar['text'] = "Connected"
-                    self.connect_window.destroy()
-                    self.refresh_button.config(state="enabled")
-                    self.add_trip_button.config(state="enabled")
+                    self.refresh_button.config(state=tk.NORMAL)
+                    self.add_trip_button.config(state=tk.NORMAL)
+                    self.username_field.config(state=tk.DISABLED)
+                    self.password_field.config(state=tk.DISABLED)
                     self.token = token.get("token")
                     self.user_id = token.get('id')
                     trips = self.get_trip_list()
@@ -498,7 +494,29 @@ class TripLogApp(tk.Tk):
                 if connect.status_code == 201:
                     response = connect.json()
                     if response:
-                        print(json.dumps(response))
+                        trip = self.get_trip_detail(trip_id_data)
+                        print(response)
+                        print(trip)
+                        if trip:
+                            trip_location = trip.get('trip_location')
+                            # Add new trip to trip location.
+                            trip_location.append(response.get('id'))
+
+                            # Construct data.
+                            data_trip = {
+                                'trip_location': trip_location
+                            }
+                            print(data_trip)
+                            # Request patch to trip.
+                            try:
+                                api_trip_url = self.api_root + "trips/" + "{}/".format(trip_id_data)
+                                connect_trip = requests.patch(api_trip_url, headers=headers, data=json.dumps(data_trip))
+                                if connect_trip.status_code == 200:
+                                    self.add_location_window.destroy()
+                                    self.reload_trips()
+                            except requests.exceptions.ConnectionError as e:
+                                showinfo("Connection error", e)
+
             except requests.exceptions.ConnectionError as e:
                 showinfo("Connection error", e)
         else:
@@ -545,13 +563,15 @@ class TripLogApp(tk.Tk):
             self.trip_view.insert('', tk.END, "{}-{}".format("trip", trip.get('id')), text=trip.get('trip_name'),
                                   values=("Trip", trip_date))
             if trip['trip_location'] is not None:
-                for location in trip['trip_location']:
-                    location_date_parse = dateutil.parser.parse(location.get('location_date'))
-                    location_date = location_date_parse.strftime("%Y-%m-%d %H:%I %p")
-                    self.trip_view.insert("{}-{}".format("trip", trip.get('id')), tk.END,
-                                          "{}-{}-{}-{}".format("loc", location.get('id'), "trip", trip.get('id')),
-                                          text=location.get('location_name'), values=("Location",
-                                                                                      location_date))
+                for location_id in trip['trip_location']:
+                    location = self.get_location_detail(location_id)
+                    if location:
+                        location_date_parse = dateutil.parser.parse(location.get('location_date'))
+                        location_date = location_date_parse.strftime("%Y-%m-%d %H:%I %p")
+                        self.trip_view.insert("{}-{}".format("trip", trip.get('id')), tk.END,
+                                              "{}-{}-{}-{}".format("loc", location.get('id'), "trip", trip.get('id')),
+                                              text=location.get('location_name'), values=("Location",
+                                                                                          location_date))
 
     """
     Reload trips display.
@@ -593,8 +613,10 @@ class TripLogApp(tk.Tk):
                     self.trip_window_open = True
                     # Get locations.
                     location = []
-                    for trip_loc in trip.get('trip_location'):
-                        location.append(trip_loc.get('location_name'))
+                    for trip_loc_id in trip.get('trip_location'):
+                        trip_loc = self.get_location_detail(trip_loc_id)
+                        if trip_loc:
+                            location.append(trip_loc.get('location_name'))
                     # Trip name.
                     trip_name_label = ttk.Label(self.trip_window, text="Trip Name")
                     trip_name_label.grid(row=0, column=0, sticky="W")
