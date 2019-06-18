@@ -72,6 +72,7 @@ class TripLogApp(tk.Tk):
         self.add_trip_window = None
         self.edit_trip_window = None
         self.add_location_window = None
+        self.edit_location_window = None
         self.trip_window = None
         self.disconnect = True
         self.trip_window_open = False
@@ -84,6 +85,7 @@ class TripLogApp(tk.Tk):
         self.token = None
         self.user_id = None
         self.categories = None
+        self.categories_opts = None
 
     """
     Create connect window.
@@ -127,15 +129,18 @@ class TripLogApp(tk.Tk):
                 self.categories = self.get_categories()
 
             if self.categories:
+                # Generate category opts.
                 tk_var = tk.StringVar()
-                categories = ['Select category']
-                for category in self.categories:
-                    categories.append(category.get('category_name'))
+                if not self.categories_opts:
+                    default_categories = {'Select category': 0}
+                    db_categories = {category.get('category_name'): category.get('id') for category in self.categories}
+                    self.categories_opts = default_categories.copy()
+                    self.categories_opts.update(db_categories)
 
                 # Trip category.
                 trip_category_label = ttk.Label(self.add_trip_window, text="Category: ")
                 trip_category_label.grid(row=1, column=0, sticky="W")
-                trip_category_option = ttk.OptionMenu(self.add_trip_window, tk_var, *categories)
+                trip_category_option = ttk.OptionMenu(self.add_trip_window, tk_var, *self.categories_opts.keys())
                 trip_category_option.grid(row=1, column=1, sticky="W")
                 # Trip body.
                 trip_body_label = ttk.Label(self.add_trip_window, text="Description")
@@ -171,10 +176,10 @@ class TripLogApp(tk.Tk):
             location_body_field.grid(row=1, column=1, sticky="W")
             # Save button
             location_save_button = ttk.Button(self.add_location_window, text="Save",
-                                              command=lambda location_name_data=location_name_field,
-                                                             location_body_data=location_body_field,
-                                                             trip_id_data=trip_id:
-                                              self.save_location(location_name_data, location_body_data, trip_id_data))
+                                                command=lambda location_name_data=location_name_field,
+                                                location_body_data=location_body_field,
+                                                trip_id_data=trip_id:
+                                                self.save_location(location_name_data, location_body_data, trip_id_data))
             location_save_button.grid(row=2, column=1, sticky="W")
 
     """
@@ -195,17 +200,68 @@ class TripLogApp(tk.Tk):
                 trip_name_field.grid(row=0, column=1, sticky="W")
                 trip_name_field.insert(0, trip.get('trip_name'))
                 trip_name_field.focus_set()
+
+                # Generate category opts.
+                tk_var = tk.StringVar()
+                trip_category = 'Select category'
+                for category in self.categories:
+                    if category.get('id') == trip.get('trip_category'):
+                        trip_category = category.get('category_name')
+                if not self.categories_opts:
+                    default_categories = {'Select category': 0}
+                    db_categories = {category.get('category_name'): category.get('id') for category in self.categories}
+                    self.categories_opts = default_categories.copy()
+                    self.categories_opts.update(db_categories)
+                # Trip category.
+                trip_category_label = ttk.Label(self.edit_trip_window, text="Category: ")
+                trip_category_label.grid(row=1, column=0, sticky="W")
+                trip_category_option = ttk.OptionMenu(self.edit_trip_window, tk_var, *self.categories_opts.keys())
+                tk_var.set(trip_category)
+                trip_category_option.grid(row=1, column=1, sticky="W")
                 # Trip body field.
                 trip_body_label = tk.Label(self.edit_trip_window, text="Description")
-                trip_body_label.grid(row=1, column=0, sticky="NW")
+                trip_body_label.grid(row=2, column=0, sticky="NW")
                 trip_body_field = tk.Text(self.edit_trip_window, height=10, width=25)
-                trip_body_field.grid(row=1, column=1, sticky="W")
-                #trip_body_field.insert(tk.END, trip.get('trip_description'))
+                trip_body_field.grid(row=2, column=1, sticky="W")
+                trip_body_field.insert(tk.END, trip.get('trip_body'))
                 # Update button.
                 trip_update_button = ttk.Button(self.edit_trip_window, text="Update",
-                                               command=lambda trip_name_data=trip_name_field, trip_body_data=trip_body_field, trip_id_data=trip.get('id'):
-                                               self.update_trip(trip_name_data, trip_body_data, trip_id_data))
-                trip_update_button.grid(row=2, column=1, sticky="W")
+                                                command=lambda trip_name_data=trip_name_field,
+                                                trip_body_data=trip_body_field, trip_category_data=tk_var, trip_id_data=trip.get('id'):
+                                                self.update_trip(trip_name_data, trip_category_data, trip_body_data, trip_id_data))
+                trip_update_button.grid(row=3, column=1, sticky="W")
+
+    """
+    Edit location window.
+    """
+    def edit_location_popup(self, location_id):
+        if self.disconnect is False:
+            self.edit_location_window = tk.Toplevel()
+            self.edit_location_window.wm_title("Edit location id" + "{}".format(location_id))
+            self.trip_window.destroy()
+            # Get location data.
+            location = self.get_location_detail(location_id)
+            print(location)
+            if location:
+                # Location name.
+                location_name_label = ttk.Label(self.edit_location_window, text="Location name")
+                location_name_label.grid(row=0, column=0, sticky="W")
+                location_name_field = tk.Entry(self.edit_location_window)
+                location_name_field.grid(row=0, column=1, sticky="W")
+                location_name_field.insert(0, location.get('location_name'))
+                # Location description
+                location_body_label = ttk.Label(self.edit_location_window, text="Description")
+                location_body_label.grid(row=1, column=0, sticky="NW")
+                location_body_field = tk.Text(self.edit_location_window, height=10, width=25)
+                location_body_field.grid(row=1, column=1, sticky="W")
+                location_body_field.insert(tk.END, location.get('location_body'))
+                # Save button
+                location_save_button = ttk.Button(self.edit_location_window, text="Update",
+                                                  command=lambda location_name_data=location_name_field,
+                                                                 location_body_data=location_body_field,
+                                                                 location_id_data=location_id:
+                                                  self.update_location(location_name_data, location_body_data, location_id_data))
+                location_save_button.grid(row=2, column=1, sticky="W")
 
     """
     Connect to server.
@@ -367,10 +423,7 @@ class TripLogApp(tk.Tk):
 
         if trip_name_data.get() and trip_category_data.get() != "Select category" and \
                 len(trip_body_data.get("1.0", tk.END)) > 1:
-            trip_category = None
-            for category in self.categories:
-                if category.get('category_name') == trip_category_data.get():
-                    trip_category = category.get('id')
+            trip_category = self.categories_opts[trip_category_data.get()]
 
             data = {
                 'trip_name': trip_name_data.get(),
@@ -392,8 +445,35 @@ class TripLogApp(tk.Tk):
     """
     Update trip.
     """
-    def update_trip(self, trip_name_data, trip_body_data, trip_id_data):
-        pass
+    def update_trip(self, trip_name_data, trip_category_data, trip_body_data, trip_id_data):
+        api_url = self.api_root + "trips/" + "{}/".format(trip_id_data)
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + self.token,
+        }
+
+        if trip_name_data.get() and trip_category_data.get() != "Select category" and \
+                len(trip_body_data.get("1.0", tk.END)) > 1:
+            trip_category = self.categories_opts[trip_category_data.get()]
+
+            data = {
+                'trip_name': trip_name_data.get(),
+                'trip_category': trip_category,
+                'trip_body': trip_body_data.get("1.0", tk.END),
+                'trip_user': self.user_id,
+            }
+
+            try:
+                connect = requests.patch(api_url, headers=headers, data=json.dumps(data))
+                if connect.status_code == 200:
+                    self.edit_trip_window.destroy()
+                    self.reload_trips()
+            except requests.exceptions.ConnectionError as e:
+                showinfo("Connection error", e)
+
+        else:
+            showinfo("Require fields", "Please fill required fields.")
 
     """
     Save location.
@@ -419,6 +499,36 @@ class TripLogApp(tk.Tk):
                     response = connect.json()
                     if response:
                         print(json.dumps(response))
+            except requests.exceptions.ConnectionError as e:
+                showinfo("Connection error", e)
+        else:
+            showinfo("Require fields", "Please fill required fields.")
+
+    """
+    Update location.
+    """
+    def update_location(self, location_name_data, location_body_data, location_id_data):
+        api_url = self.api_root + "locations/" + "{}/".format(location_id_data)
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + self.token,
+        }
+
+        if location_name_data.get() and len(location_body_data.get("1.0", tk.END)) > 1:
+
+            data = {
+                'location_name': location_name_data.get(),
+                'location_body': location_body_data.get("1.0", tk.END),
+            }
+
+            try:
+                connect = requests.patch(api_url, headers=headers, data=json.dumps(data))
+                if connect.status_code == 200:
+                    response = connect.json()
+                    if response:
+                        self.edit_location_window.destroy()
+                        self.reload_trips()
             except requests.exceptions.ConnectionError as e:
                 showinfo("Connection error", e)
         else:
@@ -557,7 +667,7 @@ class TripLogApp(tk.Tk):
                     location_delete_button.grid(row=3, column=1, sticky="W")
                     location_edit_button = ttk.Button(self.trip_window, text="Edit location",
                                                       command=lambda location_id=location.get('id'):
-                                                      self.location_delete(location_id))
+                                                      self.edit_location_popup(location_id))
                     location_edit_button.grid(row=4, column=1, sticky="W")
 
     """
