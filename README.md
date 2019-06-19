@@ -5,7 +5,7 @@ JS framework using react, socket-io and nodejs as frontend to display 'realtime'
 reload.
 
 # Screenshot
-
+[![Triplog App](https://raw.githubusercontent.com/satujamsaja/triplogrestjango/master/screenshot.jpg)](https://www.youtube.com/watch?v=yZO8HrBGbsQ)
 # Requirements
 * Python 3
 * Nodejs
