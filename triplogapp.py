@@ -101,7 +101,6 @@ class TripLogApp(tk.Tk):
     """
     Create connect window.
     """
-
     def connect_window(self):
         if self.disconnect:
             self.connect_server(self.username_field, self.password_field)
@@ -111,7 +110,6 @@ class TripLogApp(tk.Tk):
     """
     Add trip window.
     """
-
     def add_trip_popup(self):
         if self.disconnect is False:
             self.add_trip_window = tk.Toplevel()
@@ -298,7 +296,6 @@ class TripLogApp(tk.Tk):
     """
     Get categories.
     """
-
     def get_categories(self):
         api_url = self.api_root + "categories/"
         headers = {
@@ -320,7 +317,6 @@ class TripLogApp(tk.Tk):
     """
     Get data from server
     """
-
     def get_trip_list(self):
         api_url = self.api_root + "trips/"
         headers = {
@@ -342,7 +338,6 @@ class TripLogApp(tk.Tk):
     """
     Get trip detail
     """
-
     def get_trip_detail(self, trip_id):
         api_url = self.api_root + "trips/" + "{}".format(trip_id)
         headers = {
@@ -364,7 +359,6 @@ class TripLogApp(tk.Tk):
     """
     Get location detail
     """
-
     def get_location_detail(self, location_id):
         api_url = self.api_root + "locations/" + "{}".format(location_id)
         headers = {
@@ -386,7 +380,6 @@ class TripLogApp(tk.Tk):
     """
     Get category detail
     """
-
     def get_category_detail(self, category_id):
         api_url = self.api_root + "categories/" + "{}".format(category_id)
         headers = {
@@ -408,7 +401,6 @@ class TripLogApp(tk.Tk):
     """
     Save trip
     """
-
     def save_trip(self, trip_name_data, trip_category_data, trip_body_data):
         api_url = self.api_root + "trips/"
 
@@ -504,7 +496,6 @@ class TripLogApp(tk.Tk):
                             data_trip = {
                                 'trip_location': trip_location
                             }
-                            print(data_trip)
                             # Request patch to trip.
                             try:
                                 api_trip_url = self.api_root + "trips/" + "{}/".format(trip_id_data)
@@ -553,7 +544,6 @@ class TripLogApp(tk.Tk):
     """
     Render result in TreeView.
     """
-
     def display_trips(self, data):
         for trip in data:
             trip_date_parse = dateutil.parser.parse(trip.get('trip_date'))
@@ -574,7 +564,6 @@ class TripLogApp(tk.Tk):
     """
     Reload trips display.
     """
-
     def reload_trips(self):
         # Clean all items
         children = self.trip_view.get_children()
@@ -591,7 +580,6 @@ class TripLogApp(tk.Tk):
     """
     Open trip detail on tree click.
     """
-
     def open_trip_detail(self, event):
         item = self.trip_view.identify('item', event.x, event.y)
         root_x = self.winfo_x()
@@ -693,7 +681,6 @@ class TripLogApp(tk.Tk):
     """
     Delete trip.
     """
-
     def trip_delete(self, trip_id):
         api_url = self.api_root + "trips/" + "{}".format(trip_id)
         headers = {
@@ -716,7 +703,6 @@ class TripLogApp(tk.Tk):
     """
     Delete location.
     """
-
     def location_delete(self, location_id):
         api_url = self.api_root + "locations/" + "{}".format(location_id)
         headers = {
@@ -739,7 +725,6 @@ class TripLogApp(tk.Tk):
     """
     Quit app.
     """
-
     def quit_app(self):
         quit_app = messagebox.askquestion("Disconnect and quit", "Are you sure want to exit application",
                                           icon='warning')
